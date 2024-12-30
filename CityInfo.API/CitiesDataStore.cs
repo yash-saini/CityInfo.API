@@ -17,13 +17,32 @@ namespace CityInfo.API
                 {
                     Id = 1,
                     Name = "New York City",
-                    Description = "Financial hub"
+                    Description = "Financial hub",
+                    PointsOfInterest = new List<PointsOfInterestDTO>()
+                    {
+                        new PointsOfInterestDTO()
+                        {
+                            Id = 11,
+                            Name = "Statue of Liberty",
+                            Description = "Iconic site",
+                        }
+                    }
+
                 },
                 new CityDTO()
                 {
                     Id = 2,
                     Name = "Buffalo",
-                    Description = "My City"
+                    Description = "My City",
+                    PointsOfInterest = new List<PointsOfInterestDTO>()
+                    {
+                        new PointsOfInterestDTO()
+                        {
+                            Id = 11,
+                            Name = "Niagara Falls",
+                            Description = "Wonder of the World",
+                        }
+                    }
                 },
             };
         }
