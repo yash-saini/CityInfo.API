@@ -7,6 +7,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddProblemDetails(options => {
+    options.CustomizeProblemDetails = (ctx) =>
+    {
+        ctx.ProblemDetails.Title = "An error occurred!";
+        ctx.ProblemDetails.Extensions.Add("additionalinfo", "Additional Info Example");
+        ctx.ProblemDetails.Extensions.Add("Server", Environment.MachineName);
+    };
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
