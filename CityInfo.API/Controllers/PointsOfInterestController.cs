@@ -53,6 +53,11 @@ namespace CityInfo.API.Controllers
         [HttpPost]
         public ActionResult<PointsOfInterestDTO> CreatePointOfInterest(int cityId, PointsOfInterestForCreationDTO pointOfInterest)
         {
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var concernedCity = CitiesDataStore.current.Cities.FirstOrDefault(x => x.Id == cityId);
             if (concernedCity == null)
             {
@@ -70,6 +75,75 @@ namespace CityInfo.API.Controllers
             concernedCity.PointsOfInterest.Add(finalPointOfInterest);
 
             return CreatedAtAction("GetSpecificPointOfInterest", new { cityId, pointOfInterestID = finalPointOfInterest.Id }, finalPointOfInterest);
+        }
+
+        [HttpPut("{pointOfInterestID}")]    
+        public ActionResult UpdatePointOfInterest(int cityId, int pointOfInterestID, PointsOfInterestForUpdateDTO pointOfInterest)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var concernedCity = CitiesDataStore.current.Cities.FirstOrDefault(x => x.Id == cityId);
+            if (concernedCity == null)
+            {
+                return NotFound();
+            }
+
+            var pointOfInterestFromStore = concernedCity.PointsOfInterest.FirstOrDefault(poi => poi.Id == pointOfInterestID);
+            if (pointOfInterestFromStore == null)
+            {
+                return NotFound();
+            }
+
+            pointOfInterestFromStore.Name = pointOfInterest.Name;
+            pointOfInterestFromStore.Description = pointOfInterest.Description;
+
+            return NoContent();
+        }
+
+        [HttpPatch("{pointOfInterestID}")]
+        public ActionResult PartiallyUpdatePointOfInterest(int cityId, int pointOfInterestID, [FromBody] Microsoft.AspNetCore.JsonPatch.JsonPatchDocument<PointsOfInterestForUpdateDTO> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return BadRequest();
+            }
+
+            var concernedCity = CitiesDataStore.current.Cities.FirstOrDefault(x => x.Id == cityId);
+            if (concernedCity == null)
+            {
+                return NotFound();
+            }
+
+            var pointOfInterestFromStore = concernedCity.PointsOfInterest.FirstOrDefault(poi => poi.Id == pointOfInterestID);
+            if (pointOfInterestFromStore == null)
+            {
+                return NotFound();
+            }
+
+            var pointOfInterestToPatch = new PointsOfInterestForUpdateDTO()
+            {
+                Name = pointOfInterestFromStore.Name,
+                Description = pointOfInterestFromStore.Description
+            };
+
+            patchDocument.ApplyTo(pointOfInterestToPatch, ModelState);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if(!TryValidateModel(pointOfInterestToPatch))
+            {
+                return BadRequest(ModelState);
+            }
+            pointOfInterestFromStore.Name = pointOfInterestToPatch.Name;
+            pointOfInterestFromStore.Description = pointOfInterestToPatch.Description;
+
+            return NoContent();
         }
     }
 }
