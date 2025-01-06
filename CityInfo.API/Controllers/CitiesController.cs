@@ -1,4 +1,5 @@
 ﻿using CityInfo.API.Models;
+using CityInfo.API.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CityInfo.API.Controllers
@@ -7,10 +8,18 @@ namespace CityInfo.API.Controllers
     [Route("api/cities")]
     public class CitiesController : ControllerBase
     {
+        private readonly CitiesDataStore _citiesDataStore;
+        private readonly ILogger<CitiesController> _logger;
+        public CitiesController(ILogger<CitiesController> logger, CitiesDataStore citiesDataStore)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _citiesDataStore = citiesDataStore ?? throw new ArgumentNullException(nameof(_citiesDataStore));
+        }
+
         [HttpGet()]
         public ActionResult<IEnumerable<CityDTO>> GetCities()
         {
-            var temp = CitiesDataStore.current.Cities;
+            var temp = _citiesDataStore.Cities;
             if (temp != null)
             {
                 return Ok(temp);
@@ -24,7 +33,7 @@ namespace CityInfo.API.Controllers
         [HttpGet("{id}")]
         public ActionResult<CityDTO> GetOneCity(int id)
         {
-           var temp = CitiesDataStore.current.Cities.FirstOrDefault(x => x.Id == id);
+           var temp = _citiesDataStore.Cities.FirstOrDefault(x => x.Id == id);
 
             if (temp != null)
             {
