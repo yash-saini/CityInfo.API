@@ -1,6 +1,7 @@
 using CityInfo.API;
 using CityInfo.API.DbContexts;
 using CityInfo.API.Services;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -30,7 +31,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<FileExtensionContentTypeProvider>();
 
 builder.Services.AddSingleton<CitiesDataStore>();
-builder.Services.AddDbContext<CityInfoContext>(dbContextOptions => dbContextOptions.UseSqlite("Data Source=CityInfo.db"));
+builder.Services.AddDbContext<CityInfoContext>(dbContextOptions => dbContextOptions.UseSqlite(builder.Configuration["ConnectionStrings:CityInfoDBConnectionString"]));
 
 builder.Services.AddTransient<IMailService,LocalMailService>();
 
@@ -40,8 +41,10 @@ builder.Services.AddProblemDetails(options => {
         ctx.ProblemDetails.Title = "An error occurred!";
         ctx.ProblemDetails.Extensions.Add("additionalinfo", "Additional Info Example");
         ctx.ProblemDetails.Extensions.Add("Server", Environment.MachineName);
+        ctx.ProblemDetails.Extensions["Exception"] = ctx.HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error.ToString();
     };
 });
+builder.Services.AddScoped<ICityInfoRepository, CityInfoRepository>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

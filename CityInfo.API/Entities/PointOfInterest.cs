@@ -20,6 +20,11 @@ namespace CityInfo.API.Entities
         {
             Name = name;
         }
+
+        public PointOfInterest()
+        {
+        }
+
         public City? City { get; set; }
     }
 }

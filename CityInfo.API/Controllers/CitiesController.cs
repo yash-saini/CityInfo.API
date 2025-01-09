@@ -1,6 +1,7 @@
 ﻿using CityInfo.API.Models;
 using CityInfo.API.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace CityInfo.API.Controllers
 {
@@ -8,41 +9,92 @@ namespace CityInfo.API.Controllers
     [Route("api/cities")]
     public class CitiesController : ControllerBase
     {
-        private readonly CitiesDataStore _citiesDataStore;
+        private readonly ICityInfoRepository _cityInfoRepository;
         private readonly ILogger<CitiesController> _logger;
-        public CitiesController(ILogger<CitiesController> logger, CitiesDataStore citiesDataStore)
+        const int maxCitiesPageSize = 20;
+
+        public CitiesController(ILogger<CitiesController> logger, ICityInfoRepository cityInfoRepository)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _citiesDataStore = citiesDataStore ?? throw new ArgumentNullException(nameof(_citiesDataStore));
+            _cityInfoRepository = cityInfoRepository ?? throw new ArgumentNullException(nameof(cityInfoRepository));
         }
 
         [HttpGet()]
-        public ActionResult<IEnumerable<CityDTO>> GetCities()
+        public async Task<ActionResult<IEnumerable<CityWithoutPointOfInterestDTO>>> GetCities(string? name, string? searchQuery, int pageNumber = 1, int pageSize = 10)
         {
-            var temp = _citiesDataStore.Cities;
-            if (temp != null)
+            //var temp = _citiesDataStore.Cities;
+            //if (temp != null)
+            //{
+            //    return Ok(temp);
+            //}
+            //else
+            //{
+            //    return NotFound();
+            //}
+            if (pageSize > maxCitiesPageSize)
             {
-                return Ok(temp);
+                pageSize = maxCitiesPageSize;
             }
-            else
+            var (cities , paginationMetaData) = await _cityInfoRepository.GetCitiesAsync(name, searchQuery, pageNumber, pageSize); 
+            Response.Headers.Add("X-Pagination", JsonSerializer.Serialize(paginationMetaData));
+            var results = new List<CityWithoutPointOfInterestDTO>();
+            foreach (var city in cities)
             {
-                return NotFound();
+                results.Add(new CityWithoutPointOfInterestDTO
+                {
+                    Id = city.Id,
+                    Name = city.Name,
+                    Description = city.Description
+                });
             }
+            return Ok(results);
         }
 
         [HttpGet("{id}")]
-        public ActionResult<CityDTO> GetOneCity(int id)
+        public async Task<IActionResult> GetOneCity(int id, bool includePointsOfInterest = false)
         {
-           var temp = _citiesDataStore.Cities.FirstOrDefault(x => x.Id == id);
+           //var temp = _citiesDataStore.Cities.FirstOrDefault(x => x.Id == id);
 
-            if (temp != null)
-            {
-                return Ok(temp);
-            }
-            else
-            {
+           // if (temp != null)
+           // {
+           //     return Ok(temp);
+           // }
+           // else
+           // {
+           //     return NotFound();
+           // }
+           var city = await _cityInfoRepository.GetCityAsync(id, includePointsOfInterest);
+            if (city == null)
+              {
                 return NotFound();
+              }
+            if(includePointsOfInterest)
+            {
+                var cityResult = new CityDTO
+                {
+                    Id = city.Id,
+                    Name = city.Name,
+                    Description = city.Description
+                };
+                var pointsOfInterest = await _cityInfoRepository.GetPointsOfInterestsForCityAsync(id);
+                foreach (var poi in pointsOfInterest)
+                {
+                    cityResult.PointsOfInterest.Add(new PointsOfInterestDTO
+                    {
+                        Id = poi.Id,
+                        Name = poi.Name,
+                        Description = poi.Description
+                    });
+                }
+                return Ok(cityResult);
             }
+            var result = new CityWithoutPointOfInterestDTO
+                {
+                Id = city.Id,
+                Name = city.Name,
+                Description = city.Description
+            };
+            return Ok(result);
         }
     }
 }
